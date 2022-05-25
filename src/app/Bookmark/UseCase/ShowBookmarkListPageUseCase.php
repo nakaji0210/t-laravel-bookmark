@@ -24,7 +24,7 @@ final class ShowBookmarkListPageUseCase
             "技術分野に特化したブックマーク一覧です。みんなが投稿した技術分野のブックマークが投稿順に並んでいます。{$top_categories->pluck('display_name')->slice(0, 5)->join('、')}など、気になる分野のブックマークに絞って調べることもできます"
         );
 
-        $top_users = User::query()->withCount('bookmarks')->orderBy('bookmarks_count', 'desc')->take(10)->get();
+        $top_users = User::query()->withCount('bookmarks')->orderBy('bookmarks_count', 'desc')->orderBy('id', 'asc')->take(10)->get();
 
         return [
             'bookmarks' => $bookmarks,
