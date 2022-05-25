@@ -12,7 +12,7 @@ final class GetLinkPreviewResponse
     public function __construct(
         string $title,
         string $description,
-        string $cover,
+        string $cover
     ) {
         $this->title = $title;
         $this->description = $description;
