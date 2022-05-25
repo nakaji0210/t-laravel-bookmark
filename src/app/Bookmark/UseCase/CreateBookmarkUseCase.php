@@ -2,7 +2,7 @@
 
 namespace App\Bookmark\UseCase;
 
-use App\Lib\LinkPreview\LinkPreview;
+use App\Lib\LinkPreview\LinkPreviewInterface;
 use App\Models\Bookmark;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -10,6 +10,13 @@ use Illuminate\Validation\ValidationException;
 
 class CreateBookmarkUseCase
 {
+    private LinkPreviewInterface $linkPreview;
+
+    public function __construct(LinkPreviewInterface $linkPreview)
+    {
+        $this->linkPreview = $linkPreview;
+    }
+
     /**
      * ブックマーク作成処理
      *
@@ -21,7 +28,7 @@ class CreateBookmarkUseCase
     public function handle(string $url, int $categoryId, string $comment): void
     {
         try {
-            $linkPreview = (new LinkPreview())->get($url);
+            $linkPreview = $this->linkPreview->getLinkPreview($url);
 
             $model = new Bookmark();
             $model->url = $url;
