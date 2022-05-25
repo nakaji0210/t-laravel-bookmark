@@ -8,6 +8,7 @@ use App\Bookmark\UseCase\ShowBookmarkListPageUseCase;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CreateBookmarkRequest;
 use App\Lib\LinkPreview\LinkPreview;
+use App\Lib\LinkPreview\MockLinkPreview;
 use App\Models\Bookmark;
 use App\Models\BookmarkCategory;
 use App\Models\User;
@@ -108,11 +109,9 @@ class BookmarkController extends Controller
      * @param CreateBookmarkRequest $request
      * @return Application|\Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector
      */
-    public function create(CreateBookmarkRequest $request)
+    public function create(CreateBookmarkRequest $request, CreateBookmarkUseCase $useCase)
     {
-        $useCase = new CreateBookmarkUseCase(new LinkPreview); // 仮で実装クラスをnewして渡している
-
-        // Memo: 引数が増える場合は配列にするか、別途クラスに詰めて渡すのが良い
+        // Memo: 引数が増える場合は配列にするか、引数の型を定義したクラスに詰めて渡すのが良い
         $useCase->handle(
             $request->url,
             $request->category,
