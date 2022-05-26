@@ -4,6 +4,7 @@
 namespace App\Http\Controllers\Bookmarks;
 
 use App\Bookmark\UseCase\CreateBookmarkUseCase;
+use App\Bookmark\UseCase\DeleteBookmarkUseCase;
 use App\Bookmark\UseCase\ShowBookmarkListPageUseCase;
 use App\Bookmark\UseCase\UpdateBookmarkUseCase;
 use App\Http\Controllers\Controller;
@@ -149,6 +150,7 @@ class BookmarkController extends Controller
      *
      * @param UpdateBookmarkRequest $request
      * @param int $id
+     * @param UpdateBookmarkUseCase $useCase
      * @return Application|\Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector
      * @throws ValidationException
      */
@@ -166,35 +168,16 @@ class BookmarkController extends Controller
 
     /**
      * ブックマーク削除
-     * 公開後24時間経過したものは削除できない
-     * 本人以外のブックマークは削除できない
      *
      * @param int $id
+     * @param DeleteBookmarkUseCase $useCase
      * @return Application|\Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector
      * @throws ValidationException
      */
-    public function delete(int $id)
+    public function delete(int $id, DeleteBookmarkUseCase $useCase)
     {
-        if (Auth::guest()) {
-            // @note ここの処理はユーザープロフィールでも使われている
-            return redirect('/login');
-        }
+        $useCase->handle($id);
 
-        $model = Bookmark::query()->findOrFail($id);
-
-        if ($model->can_not_delete_or_edit) {
-            throw ValidationException::withMessages([
-                'can_delete' => 'ブックマーク後24時間経過したものは削除できません'
-            ]);
-        }
-
-        if ($model->user_id !== Auth::id()) {
-            abort(403);
-        }
-
-        $model->delete();
-
-        // 暫定的に成功時はプロフィールページへ
         return redirect('/user/profile', 302);
     }
 }
