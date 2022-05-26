@@ -5,24 +5,18 @@ namespace App\Http\Controllers\Bookmarks;
 
 use App\Bookmark\UseCase\CreateBookmarkUseCase;
 use App\Bookmark\UseCase\ShowBookmarkListPageUseCase;
+use App\Bookmark\UseCase\UpdateBookmarkUseCase;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CreateBookmarkRequest;
-use App\Lib\LinkPreview\LinkPreview;
-use App\Lib\LinkPreview\MockLinkPreview;
+use App\Http\Requests\UpdateBookmarkRequest;
 use App\Models\Bookmark;
 use App\Models\BookmarkCategory;
 use App\Models\User;
 use Artesaos\SEOTools\Facades\SEOTools;
-use Dusterio\LinkPreview\Client;
-use Dusterio\LinkPreview\Exceptions\UnknownParserException;
-use Exception;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Http\Request;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -103,9 +97,6 @@ class BookmarkController extends Controller
     /**
      * ブックマーク作成処理
      *
-     * ブックマークするページのtitle, description, サムネイル画像を専用のライブラリを使って取得し、一緒にデータベースに保存する
-     * URLが存在しないなどの理由で失敗したらバリデーションエラー扱いにする
-     *
      * @param CreateBookmarkRequest $request
      * @return Application|\Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector
      */
@@ -125,13 +116,12 @@ class BookmarkController extends Controller
      * 編集画面の表示
      * 未ログインであればログインページへ
      * 存在しないブックマークの編集画面なら表示しない
-     * 本人のブックマークでなければ403で返す
+     * 他のユーザーのブックマークの場合は403エラーにする
      *
-     * @param Request $request
      * @param int $id
      * @return Application|Factory|\Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector|View
      */
-    public function showEditForm(Request $request, int $id)
+    public function showEditForm(int $id)
     {
         if (Auth::guest()) {
             // @note ここの処理はユーザープロフィールでも使われている
@@ -156,42 +146,19 @@ class BookmarkController extends Controller
 
     /**
      * ブックマーク更新
-     * コメントとカテゴリのバリデーションは作成時のそれと合わせる
-     * 本人以外は編集できない
-     * ブックマーク後24時間経過したものは編集できない仕様
      *
-     * @param Request $request
+     * @param UpdateBookmarkRequest $request
      * @param int $id
      * @return Application|\Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector
      * @throws ValidationException
      */
-    public function update(Request $request, int $id)
+    public function update(UpdateBookmarkRequest $request, int $id, UpdateBookmarkUseCase $useCase)
     {
-        if (Auth::guest()) {
-            // @note ここの処理はユーザープロフィールでも使われている
-            return redirect('/login');
-        }
-
-        Validator::make($request->all(), [
-            'comment' => 'required|string|min:10|max:1000',
-            'category' => 'required|integer|exists:bookmark_categories,id',
-        ])->validate();
-
-        $model = Bookmark::query()->findOrFail($id);
-
-        if ($model->can_not_delete_or_edit) {
-            throw ValidationException::withMessages([
-                'can_edit' => 'ブックマーク後24時間経過したものは編集できません'
-            ]);
-        }
-
-        if ($model->user_id !== Auth::id()) {
-            abort(403);
-        }
-
-        $model->category_id = $request->category;
-        $model->comment = $request->comment;
-        $model->save();
+        $useCase->handle(
+            $id,
+            $request->category,
+            $request->comment
+        );
 
         // 成功時は一覧ページへ
         return redirect('/bookmarks', 302);
