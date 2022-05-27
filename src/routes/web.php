@@ -33,7 +33,7 @@ Route::prefix('/bookmark-create')->group(function () {
     Route::get('/', 'Bookmarks\BookmarkController@showCreateForm')->middleware('auth');
 });
 Route::prefix('/bookmark-edit')->group(function () {
-    Route::get('/{id}', 'Bookmarks\BookmarkController@showEditForm');
+    Route::get('/{id}', 'Bookmarks\BookmarkController@showEditForm')->middleware('auth');
 });
 
 Route::prefix('/user')->group(function () {

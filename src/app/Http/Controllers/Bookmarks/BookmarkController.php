@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Bookmarks;
 use App\Bookmark\UseCase\CreateBookmarkUseCase;
 use App\Bookmark\UseCase\DeleteBookmarkUseCase;
 use App\Bookmark\UseCase\ShowBookmarkCreateFormUseCase;
+use App\Bookmark\UseCase\ShowBookmarkEditFormUseCase;
 use App\Bookmark\UseCase\ShowBookmarkListPageUseCase;
 use App\Bookmark\UseCase\UpdateBookmarkUseCase;
 use App\Http\Controllers\Controller;
@@ -115,28 +116,18 @@ class BookmarkController extends Controller
      * 他のユーザーのブックマークの場合は403エラーにする
      *
      * @param int $id
+     * @param ShowBookmarkEditFormUseCase $useCase
      * @return Application|Factory|\Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector|View
      */
-    public function showEditForm(int $id)
+    public function showEditForm(int $id, ShowBookmarkEditFormUseCase $useCase)
     {
-        if (Auth::guest()) {
-            // @note ここの処理はユーザープロフィールでも使われている
-            return redirect('/login');
-        }
-
-        SEOTools::setTitle('ブックマーク編集');
-
-        $bookmark = Bookmark::query()->findOrFail($id);
-        if ($bookmark->user_id !== Auth::id()) {
-            abort(403);
-        }
-
-        $master_categories = BookmarkCategory::query()->withCount('bookmarks')->orderBy('bookmarks_count', 'desc')->orderBy('id')->take(10)->get();
+        $authUserId = Auth::user()->id;
+        $result = $useCase->handle($id, $authUserId);
 
         return view('page.bookmark_edit.index', [
-            'user' => Auth::user(),
-            'bookmark' => $bookmark,
-            'master_categories' => $master_categories,
+            'user' => $authUserId,
+            'bookmark' => $result['bookmark'],
+            'master_categories' => $result['master_categories'],
         ]);
     }
 
