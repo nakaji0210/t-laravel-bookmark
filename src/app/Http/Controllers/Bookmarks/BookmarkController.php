@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Bookmarks;
 
 use App\Bookmark\UseCase\CreateBookmarkUseCase;
 use App\Bookmark\UseCase\DeleteBookmarkUseCase;
+use App\Bookmark\UseCase\ShowBookmarkCreateFormUseCase;
 use App\Bookmark\UseCase\ShowBookmarkListPageUseCase;
 use App\Bookmark\UseCase\UpdateBookmarkUseCase;
 use App\Http\Controllers\Controller;
@@ -78,17 +79,12 @@ class BookmarkController extends Controller
 
     /**
      * ブックマーク作成フォームの表示
+     * @param ShowBookmarkCreateFormUseCase $useCase
      * @return Application|Factory|View
      */
-    public function showCreateForm()
+    public function showCreateForm(ShowBookmarkCreateFormUseCase $useCase)
     {
-        if (Auth::id() === null) {
-            return redirect('/login');
-        }
-
-        SEOTools::setTitle('ブックマーク作成');
-
-        $master_categories = BookmarkCategory::query()->oldest('id')->get();
+        $master_categories = $useCase->handle();
 
         return view('page.bookmark_create.index', [
             'master_categories' => $master_categories,
@@ -103,7 +99,6 @@ class BookmarkController extends Controller
      */
     public function create(CreateBookmarkRequest $request, CreateBookmarkUseCase $useCase)
     {
-        // Memo: 引数が増える場合は配列にするか、引数の型を定義したクラスに詰めて渡すのが良い
         $useCase->handle(
             $request->url,
             $request->category,
@@ -162,7 +157,6 @@ class BookmarkController extends Controller
             $request->comment
         );
 
-        // 成功時は一覧ページへ
         return redirect('/bookmarks', 302);
     }
 
