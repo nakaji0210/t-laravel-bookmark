@@ -1,10 +1,10 @@
 <?php
 
-
 namespace App\Http\Controllers\Bookmarks;
 
 use App\Bookmark\UseCase\CreateBookmarkUseCase;
 use App\Bookmark\UseCase\DeleteBookmarkUseCase;
+use App\Bookmark\UseCase\ShowBookmarkCategoryListPageUseCase;
 use App\Bookmark\UseCase\ShowBookmarkCreateFormUseCase;
 use App\Bookmark\UseCase\ShowBookmarkEditFormUseCase;
 use App\Bookmark\UseCase\ShowBookmarkListPageUseCase;
@@ -12,10 +12,6 @@ use App\Bookmark\UseCase\UpdateBookmarkUseCase;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CreateBookmarkRequest;
 use App\Http\Requests\UpdateBookmarkRequest;
-use App\Models\Bookmark;
-use App\Models\BookmarkCategory;
-use App\Models\User;
-use Artesaos\SEOTools\Facades\SEOTools;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Http\Request;
@@ -40,41 +36,24 @@ class BookmarkController extends Controller
     /**
      * カテゴリ別ブックマーク一覧
      *
-     * カテゴリが数字で無かった場合404
-     * カテゴリが存在しないIDが指定された場合404
-     *
-     * title, descriptionにはカテゴリ名とカテゴリのブックマーク投稿数を含める
-     *
-     * 表示する内容は普通の一覧と同様
-     * しかし、カテゴリに関しては現在のページのカテゴリを除いて表示する
-     *
      * @param Request $request
+     * @param ShowBookmarkCategoryListPageUseCase $useCase
      * @return Application|Factory|View
      */
-    public function listCategory(Request $request)
+    public function listCategory(Request $request, ShowBookmarkCategoryListPageUseCase $useCase)
     {
-        $category_id = $request->category_id;
-        if (!is_numeric($category_id)) {
+        $categoryId = $request->category_id;
+        if (!is_numeric($categoryId)) {
             abort(404);
         }
 
-        $category = BookmarkCategory::query()->findOrFail($category_id);
-
-        SEOTools::setTitle("{$category->display_name}のブックマーク一覧");
-        SEOTools::setDescription("{$category->display_name}に特化したブックマーク一覧です。みんなが投稿した{$category->display_name}のブックマークが投稿順に並んでいます。全部で{$category->bookmarks->count()}件のブックマークが投稿されています");
-
-        $bookmarks = Bookmark::query()->with(['category', 'user'])->where('category_id', '=', $category_id)->latest('id')->paginate(10);
-
-        // 自身のページのカテゴリを表示しても意味がないのでそれ以外のカテゴリで多い順に表示する
-        $top_categories = BookmarkCategory::query()->withCount('bookmarks')->orderBy('bookmarks_count', 'desc')->orderBy('id')->where('id', '<>', $category_id)->take(10)->get();
-
-        $top_users = User::query()->withCount('bookmarks')->orderBy('bookmarks_count', 'desc')->take(10)->get();
+        $useCaseResult = $useCase->handle($categoryId);
 
         return view('page.bookmark_list.index', [
-            'h1' => "{$category->display_name}のブックマーク一覧",
-            'bookmarks' => $bookmarks,
-            'top_categories' => $top_categories,
-            'top_users' => $top_users
+            'h1' => "{$useCaseResult['categoryDisplayName']}のブックマーク一覧",
+            'bookmarks' => $useCaseResult['bookmarks'],
+            'top_categories' => $useCaseResult['topCategories'],
+            'top_users' => $useCaseResult['topUsers']
         ]);
     }
 
@@ -111,9 +90,6 @@ class BookmarkController extends Controller
 
     /**
      * 編集画面の表示
-     * 未ログインであればログインページへ
-     * 存在しないブックマークの編集画面なら表示しない
-     * 他のユーザーのブックマークの場合は403エラーにする
      *
      * @param int $id
      * @param ShowBookmarkEditFormUseCase $useCase
@@ -122,12 +98,12 @@ class BookmarkController extends Controller
     public function showEditForm(int $id, ShowBookmarkEditFormUseCase $useCase)
     {
         $authUserId = Auth::user()->id;
-        $result = $useCase->handle($id, $authUserId);
+        $useCaseResult = $useCase->handle($id, $authUserId);
 
         return view('page.bookmark_edit.index', [
             'user' => $authUserId,
-            'bookmark' => $result['bookmark'],
-            'master_categories' => $result['master_categories'],
+            'bookmark' => $useCaseResult['bookmark'],
+            'master_categories' => $useCaseResult['master_categories'],
         ]);
     }
 
