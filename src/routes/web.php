@@ -21,16 +21,19 @@ Auth::routes();
 Route::prefix('/bookmarks')->group(function () {
     Route::get('/', 'Bookmarks\BookmarkController@list');
     Route::get('/category/{category_id}', 'Bookmarks\BookmarkController@listCategory');
-    Route::post('/', 'Bookmarks\BookmarkController@create')->middleware('auth');
-    Route::put('/{id}', 'Bookmarks\BookmarkController@update')->middleware('auth');
-    Route::delete('/{id}', 'Bookmarks\BookmarkController@delete');
+
+    Route::middleware('auth')->group(function () {
+        Route::post('/', 'Bookmarks\BookmarkController@create');
+        Route::put('/{id}', 'Bookmarks\BookmarkController@update');
+        Route::delete('/{id}', 'Bookmarks\BookmarkController@delete');
+    });
 });
 
 Route::prefix('/bookmark-create')->group(function () {
-    Route::get('/', 'Bookmarks\BookmarkController@showCreateForm');
+    Route::get('/', 'Bookmarks\BookmarkController@showCreateForm')->middleware('auth');
 });
 Route::prefix('/bookmark-edit')->group(function () {
-    Route::get('/{id}', 'Bookmarks\BookmarkController@showEditForm');
+    Route::get('/{id}', 'Bookmarks\BookmarkController@showEditForm')->middleware('auth');
 });
 
 Route::prefix('/user')->group(function () {

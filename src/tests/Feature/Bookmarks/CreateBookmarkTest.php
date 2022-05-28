@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
-class CreateBookmarkUseCaseTest extends TestCase
+class CreateBookmarkTest extends TestCase
 {
     private CreateBookmarkUseCase $useCase;
 

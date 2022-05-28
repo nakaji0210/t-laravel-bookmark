@@ -6,7 +6,7 @@ use App\Bookmark\UseCase\ShowBookmarkListPageUseCase;
 use Artesaos\SEOTools\Facades\SEOTools;
 use Tests\TestCase;
 
-class ShowBookmarkListPageUseCaseTest extends TestCase
+class ShowBookmarkListPageTest extends TestCase
 {
     private ShowBookmarkListPageUseCase $useCase;
 
